@@ -1,17 +1,20 @@
-    import java.util.Arrays;
+    import java.util.ArrayList;
+import java.util.Arrays;
     import java.util.Scanner;
 
     public class Main {
         private static int[] estadoFinal;
         private static int newEstado;
-        private static String newsEstado;
+        private static String[] newsEstado;
         private static int qtyEstado;
         private static boolean isDeterministic;
         private static String palavra;
         private static String abcw;
         private static int[][] Matrix;
         private static String[][] sMatrix;
-        private static String[][] newMatrix; 
+        private static ArrayList<String[]> newMatrix; 
+        private static ArrayList<String> pastEstado;
+        private static ArrayList<Integer> pastIndex;
 
         public static void main(String[] args) {
             Scanner scan = new Scanner(System.in);
@@ -80,22 +83,36 @@
                                 }
                                 System.out.println();
                             }
-                        } else if(newMatrix.length > 0) {
-                            for (String[] string : newMatrix) {
-                                for (String c : string) {
-                                    System.out.print(c);
+                        } else {
+                            try {
+                                for (int i = 0; i < newMatrix.size(); i++) {
+                                    for (int j = 0; j < newMatrix.get(i).length; j++) {
+                                        System.out.print(newMatrix.get(i)[j]);
+                                    }
+                                    System.out.println();
                                 }
-                                System.out.println();
+                            } catch (Exception e) {
+                                for (String[] s : sMatrix) {
+                                    for (String c : s) {
+                                        System.out.print(c);
+                                    }
+                                    System.out.println();
+                                }
                             }
                         }
+                        try { Thread.sleep(2000); } catch (InterruptedException e) {}
                         break;
                     case 4:
-                        if (!isDeterministic) {
+                        if (isDeterministic) {
                             System.out.println("Só funciona com Não determinísticas");
                         } else {
-                            newMatrix = new String[0][0];
-                            newMatrix = convertNDtoD(sMatrix, abcw, "0");
-                        }    
+                            pastIndex = new ArrayList<Integer>(0);
+                            pastEstado = new ArrayList<String>(0);
+                            newsEstado = new String[abcw.length()];
+                            newMatrix = new ArrayList<>(0);
+                            newMatrix.add(new String[abcw.length()]);
+                            newMatrix = convertNDtoD(sMatrix, abcw, "0", 0);
+                        }
 
                         break;
                     case 5:
@@ -127,15 +144,44 @@
             return false;
         }
         
-        static String[][] convertNDtoD(String[][] smatrix, String abcw, String estado) {
-            for (String[] strings : newMatrix) {
-                if (Arrays.stream(strings).anyMatch(estado::equals)) {
+        static ArrayList<String[]> convertNDtoD(String[][] smatrix, String abcw, String estado, int index) {
+            try {
+                StringBuilder otherState = new StringBuilder();
+                estado.chars().distinct().forEach(c -> otherState.append((char) c));
+                if (!estado.equals(otherState.toString())) {
                     return newMatrix;
+                } else {
+                    estado = String.valueOf(otherState);
                 }
-            }
-            for (int i = 0; i < abcw.length(); i++) {
-                newsEstado = smatrix[i][Integer.parseInt(estado)];
-                newMatrix = convertNDtoD(smatrix, abcw, newsEstado);
+                pastEstado.add(estado);
+                try {
+                    newMatrix.get(index);
+                } catch (Exception e) {
+                    newMatrix.add(new String[abcw.length()]);
+                }
+                try {
+                    for (int i = 0; i < pastEstado.size() - 1; i++) {
+                        if (pastEstado.get(i).contains(estado)) {
+                            return newMatrix;
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println(e);
+                }
+                char[] ch = estado.toCharArray();
+                for (int i = 0; i < abcw.length(); i++) {
+                    newsEstado[i] = " ";
+                    for (char c : ch) {
+                        newsEstado[i] += " " + smatrix[Character.getNumericValue(c)][i];
+                    }
+                    
+                    newsEstado[i] = newsEstado[i].replaceAll("\\s+","");
+                    newMatrix.get(index)[i] = newsEstado[i];
+                    
+                    newMatrix = convertNDtoD(smatrix, abcw, newsEstado[i], index + 1);
+                }
+            } catch (Exception e) {
+                System.out.println(e);
             }
 
             return newMatrix;
